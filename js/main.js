@@ -1,4 +1,5 @@
 'use strict'
+//import Swiper from 'https://unpkg.com/swiper@7/swiper-bundle.esm.browser.min.js'
 // 1 day 
 const cartButton = document.querySelector("#cart-button")
 const modal = document.querySelector(".modal")
@@ -18,6 +19,11 @@ const logo = document.querySelector('.logo')
 const cardsMenu = document.querySelector('.cards-menu')
 
 let login = localStorage.getItem('key')
+
+function validLoginName(str){
+  const regName = /^[a-zA-Z][a-zA-Z0-9-_@\.]{1,20}$/
+  return regName.test(str)
+}
 
 function toggleModal() {
   modal.classList.toggle("is-open");
@@ -58,7 +64,7 @@ function  notAuthorized() {
   function logIn(e) {
     e.preventDefault()
     
-    if(loginInput.value.trim()){
+    if(validLoginName(loginInput.value)){
       login = loginInput.value
       localStorage.setItem('key', login)
       toggleModalAuth()
@@ -146,20 +152,24 @@ function createCardGood(){
 }
 
 function openGoods(e) {
-
   const restorant = e.target.closest('.card-restaurant')
-  if(restorant){
-    restaurants.classList.add('hide')
-    containerPromo.classList.add('hide')
-    menu.classList.remove('hide')
-
-    cardsMenu.textContent = ''
-
-    createCardGood()
-    createCardGood()
-    createCardGood()
-    createCardGood()
+  if(login){
+    if(restorant){
+      restaurants.classList.add('hide')
+      containerPromo.classList.add('hide')
+      menu.classList.remove('hide')
+  
+      cardsMenu.textContent = ''
+  
+      createCardGood()
+      createCardGood()
+      createCardGood()
+      createCardGood()
+    }
+  }else{
+    toggleModalAuth()
   }
+  
 }
 
 cartButton.addEventListener("click", toggleModal)
@@ -177,3 +187,14 @@ logo.addEventListener('click',()=>{
 checkAuth()
 createCardRestaurant()
 createCardRestaurant()
+
+// Slider
+//const swiper = document.querySelector('.swiper')
+
+new Swiper('.swiper', {
+  slidePerView: 1,
+  loop: true,
+  autoplay: true,
+  effect: 'cube'
+});
+
