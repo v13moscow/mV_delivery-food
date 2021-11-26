@@ -17,8 +17,22 @@ const restaurants = document.querySelector('.restaurants')
 const menu = document.querySelector('.menu')
 const logo = document.querySelector('.logo')
 const cardsMenu = document.querySelector('.cards-menu')
+const restaurantTitle = document.querySelector('.restaurant-title')
+const restaurantRating = document.querySelector('.rating')
+const restaurantPrice = document.querySelector('.price')
+const restaurantCategory = document.querySelector('.category')
+const inputSearch = document.querySelector('.input-search')
 
 let login = localStorage.getItem('key')
+
+const getData = async function (url){
+  const response = await fetch(url)
+  if(!response.ok){
+    throw new Error(`Ошибка по адресу ${url}, статус ошибки ${response.status}`)
+  }
+  return await response.json()
+}
+
 
 function validLoginName(str){
   const regName = /^[a-zA-Z][a-zA-Z0-9-_@\.]{1,20}$/
@@ -102,40 +116,48 @@ function checkAuth() {
 
 // 2 day 
 
-function createCardRestaurant() {
+
+
+function createCardRestaurant({ image, name, time_of_delivery, stars, price, kitchen, products  }) {
+  
+  
+  const cardRestaurant = document.createElement('a')
+  cardRestaurant.className = 'card card-restaurant'
+  cardRestaurant.products = products
+  cardRestaurant.info = { kitchen, name, price, stars}
+
   const card = `
-          <a  class="card card-restaurant">
-						<img src="img/pizza-plus/preview.jpg" alt="image" class="card-image"/>
+						<img src=${image} alt="image" class="card-image"/>
 						<div class="card-text">
 							<div class="card-heading">
-								<h3 class="card-title">Пицца плюс</h3>
-								<span class="card-tag tag">50 мин</span>
+								<h3 class="card-title">${name}</h3>
+								<span class="card-tag tag">${time_of_delivery} мин</span>
 							</div>
 							<div class="card-info">
 								<div class="rating">
-									4.5
+									${stars}
 								</div>
-								<div class="price">От 900 ₽</div>
-								<div class="category">Пицца</div>
+								<div class="price">От ${price} ₽</div>
+								<div class="category">${kitchen}</div>
 							</div>
 						</div>
-					</a>
   `
-  cardsRestaurants.insertAdjacentHTML('afterbegin', card)
+  cardRestaurant.insertAdjacentHTML('beforeend', card)
+  cardsRestaurants.insertAdjacentElement('afterbegin', cardRestaurant)
+  
 }
 
 
-function createCardGood(){
+function createCardGood({ id, name, description, price, image}){
   const cardGood = `
           <div class="card">
-						<img src="img/pizza-plus/pizza-plus.jpg" alt="image" class="card-image"/>
+						<img src=${image} alt="${name}" class="card-image"/>
 						<div class="card-text">
 							<div class="card-heading">
-								<h3 class="card-title card-title-reg">Пицца Плюс</h3>
+								<h3 class="card-title card-title-reg">${name}</h3>
 							</div>
 							<div class="card-info">
-								<div class="ingredients">Соус томатный, сыр «Моцарелла», сыр «Чеддер», томаты, пепперони,
-									телятина, грибы, бекон, болгарский перец.
+								<div class="ingredients">${description}
 								</div>
 							</div>
 							<div class="card-buttons">
@@ -143,7 +165,7 @@ function createCardGood(){
 									<span class="button-card-text">В корзину</span>
 									<span class="button-cart-svg"></span>
 								</button>
-								<strong class="card-price-bold">805 ₽</strong>
+								<strong class="card-price-bold">${price} ₽</strong>
 							</div>
 						</div>
 					</div>
@@ -155,16 +177,25 @@ function openGoods(e) {
   const restorant = e.target.closest('.card-restaurant')
   if(login){
     if(restorant){
+      cardsMenu.textContent = ''
       restaurants.classList.add('hide')
       containerPromo.classList.add('hide')
       menu.classList.remove('hide')
-  
-      cardsMenu.textContent = ''
-  
-      createCardGood()
-      createCardGood()
-      createCardGood()
-      createCardGood()
+      const { price, name, kitchen, stars } = restorant.info
+      restaurantPrice.textContent = `от ${price}₽`
+      restaurantCategory.textContent = name
+      restaurantRating.textContent = stars
+      restaurantTitle.textContent = kitchen
+      //console.dir(restorant.info);
+      getData(`./db/${restorant.products}`)
+      .then((data) =>{
+        data.forEach((item)=>{
+          createCardGood(item)
+         // creatHeaderCardRestorant(item)
+        })
+      })
+
+      
     }
   }else{
     toggleModalAuth()
@@ -172,7 +203,8 @@ function openGoods(e) {
   
 }
 
-cartButton.addEventListener("click", toggleModal)
+function init() {
+  cartButton.addEventListener("click", toggleModal)
 
 close.addEventListener("click", toggleModal)
 
@@ -183,13 +215,55 @@ logo.addEventListener('click',()=>{
   containerPromo.classList.remove('hide')
   menu.classList.add('hide')
 })
+inputSearch.addEventListener('keypress',(e)=>{
+  if(e.charCode === 13 ){
+    const value = e.target.value.trim()
+    if(!value){
+      e.target.style.backgroundColor = 'tomato'
+      e.target.value = ''
+      setTimeout(()=>{
+        e.target.style.backgroundColor = ''
+      },1000)
+      return
+    }
+    getData(`./db/partners.json`)
+    .then((data)=>{
+      return data.map((item)=>{
+       return item.products
+      })
+    })
+    .then((linkProducts)=>{
+      cardsMenu.textContent = ''
+      linkProducts.forEach(item=>{
+        getData(`./db/${item}`)
+        .then((data)=>{
+          const resultSearch = data.filter(item=>{
+            const name = item.name.toLowerCase();
+            return name.includes(value.toLowerCase())
+          })
+          restaurants.classList.add('hide')
+          containerPromo.classList.add('hide')
+          menu.classList.remove('hide')
 
+          restaurantPrice.textContent = `Вы нашли`
+          restaurantCategory.textContent = ''
+          restaurantRating.textContent = ''
+          restaurantTitle.textContent = `Результат поиска`
+          resultSearch.forEach(item=>{
+            createCardGood(item)
+          })
+        })
+      })
+    })
+  }
+})
+getData('./db/partners.json')
+.then((data) =>{
+  data.forEach((item)=>{
+    createCardRestaurant(item)
+  })
+})
 checkAuth()
-createCardRestaurant()
-createCardRestaurant()
-
-// Slider
-//const swiper = document.querySelector('.swiper')
 
 new Swiper('.swiper', {
   slidePerView: 1,
@@ -198,3 +272,5 @@ new Swiper('.swiper', {
   effect: 'cube'
 });
 
+}
+init()
