@@ -56,6 +56,13 @@ function toggleModalAuth() {
   loginInput.style.borderColor = ''
 }
 
+function returnMain(){
+  containerPromo.classList.remove('hide')
+  restaurants.classList.remove('hide')
+  menu.classList.add('hide')
+r
+}
+
 function authorized() {
   function logOut() {
     login = null
@@ -66,6 +73,7 @@ function authorized() {
     cartButton.style.display = ''
     buttonOut.removeEventListener("click", logOut)
     checkAuth()
+    returnMain()
   }
   console.log('Пользователь авторизован')
   uzerName.textContent = login
