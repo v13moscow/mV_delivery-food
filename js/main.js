@@ -22,9 +22,12 @@ const restaurantRating = document.querySelector('.rating')
 const restaurantPrice = document.querySelector('.price')
 const restaurantCategory = document.querySelector('.category')
 const inputSearch = document.querySelector('.input-search')
+const modalBody = document.querySelector('.modal-body')
+const modalPricetag = document.querySelector('.modal-pricetag')
+const buttonClearCart = document.querySelector('.clear-cart')
 
 let login = localStorage.getItem('key')
-
+const cart = []
 const getData = async function (url){
   const response = await fetch(url)
   if(!response.ok){
@@ -60,6 +63,7 @@ function authorized() {
     buttonAuth.style.display = ''
     uzerName.style.display = ''
     buttonOut.style.display = ''
+    cartButton.style.display = ''
     buttonOut.removeEventListener("click", logOut)
     checkAuth()
   }
@@ -67,7 +71,8 @@ function authorized() {
   uzerName.textContent = login
   buttonAuth.style.display = 'none'
   uzerName.style.display = 'inline'
-  buttonOut.style.display = 'block'
+  buttonOut.style.display = 'flex'
+  cartButton.style.display = 'flex'
 
   buttonOut.addEventListener("click", logOut)
 }
@@ -161,11 +166,11 @@ function createCardGood({ id, name, description, price, image}){
 								</div>
 							</div>
 							<div class="card-buttons">
-								<button class="button button-primary button-add-cart">
+								<button class="button button-primary button-add-cart" id="${id}">
 									<span class="button-card-text">В корзину</span>
 									<span class="button-cart-svg"></span>
 								</button>
-								<strong class="card-price-bold">${price} ₽</strong>
+								<strong class="card-price card-price-bold">${price} ₽</strong>
 							</div>
 						</div>
 					</div>
@@ -203,12 +208,76 @@ function openGoods(e) {
   
 }
 
-function init() {
-  cartButton.addEventListener("click", toggleModal)
+function addToCart(e) {
+  const target = e.target
+  const buttonAddCart = target.closest('.button-add-cart')
+if(buttonAddCart){
+  const card = target.closest('.card')
+  const title = card.querySelector('.card-title').textContent
+  const cost = card.querySelector('.card-price').textContent
+  const id = buttonAddCart.id
+  const food = cart.find(item => item.id === id)
+  if(food){
+    food.count ++ 
+  }else{
+    cart.push({title, cost, id, count: 1})
+  }
+  
+}
+}
+function renderCart(){
+  modalBody.textContent = ''
+  cart.forEach(({title, cost, id, count})=>{
+    const itemHtml = `
+        <div class="food-row">
+					<span class="food-name">${title}</span>
+					<strong class="food-price">${cost}</strong>
+					<div class="food-counter">
+						<button class="counter-button counter-minus" data-id=${id}>-</button>
+						<span class="counter">${count}</span>
+						<button class="counter-button counter-plus" data-id=${id}>+</button>
+					</div>
+				</div>
+    `
+    modalBody.insertAdjacentHTML('afterbegin',itemHtml)
+  })
+  
+  const totalPrice = cart.reduce((accum, item) =>(parseFloat(item.cost) * item.count) + accum,0)
+  modalPricetag.textContent = totalPrice + '₽'
+}
 
+function changeCount(e){
+  const target = e.target
+  if(target.classList.contains('counter-button')){
+    const food = cart.find(item => item.id === target.dataset.id)
+    if(target.classList.contains('counter-minus')){
+      food.count--
+      if(food.count === 0){
+        cart.splice(cart.indexOf(food), 1)
+      }
+    }
+    if(target.classList.contains('counter-plus'))food.count++
+    renderCart()
+  }
+  
+  
+}
+
+function init() {
+  cartButton.addEventListener("click", ()=>{
+  renderCart()
+    toggleModal()
+  })
+
+  
+buttonClearCart.addEventListener("click", toggleModal)
 close.addEventListener("click", toggleModal)
 
 cardsRestaurants.addEventListener('click', openGoods)
+
+modalBody.addEventListener("click",changeCount)
+console.log(modalBody);
+cardsMenu.addEventListener('click', addToCart)
 
 logo.addEventListener('click',()=>{
   restaurants.classList.remove('hide')
@@ -264,7 +333,6 @@ getData('./db/partners.json')
   })
 })
 checkAuth()
-
 new Swiper('.swiper', {
   slidePerView: 1,
   loop: true,
