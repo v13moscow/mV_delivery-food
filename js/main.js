@@ -27,7 +27,20 @@ const modalPricetag = document.querySelector('.modal-pricetag')
 const buttonClearCart = document.querySelector('.clear-cart')
 
 let login = localStorage.getItem('key')
-const cart = []
+const cart = JSON.parse(localStorage.getItem(`key_${login}`)) || []
+
+function seveCart() {
+  localStorage.setItem(`key_${login}`, JSON.stringify(cart))
+}
+
+function downloadCart () {
+  if (localStorage.getItem(`key_${login}`)){
+    const data = JSON.parse(localStorage.getItem(`key_${login}`))
+    data.forEach(item => cart.push(item))
+    // cart.push(...data) 
+  }
+}
+
 const getData = async function (url){
   const response = await fetch(url)
   if(!response.ok){
@@ -60,12 +73,12 @@ function returnMain(){
   containerPromo.classList.remove('hide')
   restaurants.classList.remove('hide')
   menu.classList.add('hide')
-r
 }
 
 function authorized() {
   function logOut() {
     login = null
+    cart.length = 0
     localStorage.removeItem('login')
     buttonAuth.style.display = ''
     uzerName.style.display = ''
@@ -75,7 +88,7 @@ function authorized() {
     checkAuth()
     returnMain()
   }
-  console.log('Пользователь авторизован')
+  
   uzerName.textContent = login
   buttonAuth.style.display = 'none'
   uzerName.style.display = 'inline'
@@ -86,8 +99,7 @@ function authorized() {
 }
 
 function  notAuthorized() {
-  console.log('Пользователь не авторизован')
-
+  
   function logIn(e) {
     e.preventDefault()
     
@@ -95,6 +107,7 @@ function  notAuthorized() {
       login = loginInput.value
       localStorage.setItem('key', login)
       toggleModalAuth()
+      downloadCart()
       logInForm.removeEventListener('submit', logIn)
       buttonAuth.removeEventListener("click", toggleModalAuth)
       closeAuth.removeEventListener("click", toggleModalAuth)
@@ -230,9 +243,10 @@ if(buttonAddCart){
   }else{
     cart.push({title, cost, id, count: 1})
   }
-  
+  seveCart()
 }
 }
+
 function renderCart(){
   modalBody.textContent = ''
   cart.forEach(({title, cost, id, count})=>{
@@ -248,10 +262,12 @@ function renderCart(){
 				</div>
     `
     modalBody.insertAdjacentHTML('afterbegin',itemHtml)
+    
   })
   
   const totalPrice = cart.reduce((accum, item) =>(parseFloat(item.cost) * item.count) + accum,0)
   modalPricetag.textContent = totalPrice + '₽'
+  seveCart()
 }
 
 function changeCount(e){
@@ -266,9 +282,8 @@ function changeCount(e){
     }
     if(target.classList.contains('counter-plus'))food.count++
     renderCart()
+    
   }
-  
-  
 }
 
 function init() {
@@ -278,7 +293,11 @@ function init() {
   })
 
   
-buttonClearCart.addEventListener("click", toggleModal)
+buttonClearCart.addEventListener("click", ()=>{
+  cart.length = 0
+  renderCart()
+  toggleModal()
+})
 close.addEventListener("click", toggleModal)
 
 cardsRestaurants.addEventListener('click', openGoods)
